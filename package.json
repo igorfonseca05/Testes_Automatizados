@@ -1,0 +1,25 @@
+{
+  "name": "teste_automatizados",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/igorfonseca05/Testes_Automatizados.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/igorfonseca05/Testes_Automatizados/issues"
+  },
+  "homepage": "https://github.com/igorfonseca05/Testes_Automatizados#readme",
+  "description": "",
+  "dependencies": {
+    "jest": "^29.7.0"
+  }
+}
