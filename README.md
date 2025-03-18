@@ -79,3 +79,40 @@ test("Nome deve ser igor", () => {
   expect(name).toBe("igor");
 });
 ```
+
+## Testando códigos assincronos
+
+Antes de começar a aprender como fazer testes em códigos assincronos, devemos alterar o arquivo `package.json` para que os testes sejam executados automaticamente sem precisar executar manualmente os testes no terminal Para isso, fazemos
+
+```json
+script: {
+    "start": "node src/index.js",
+    "dev":"env-cmd ./config/dev.env nodemon src/index.js",
+    "test":"jest --watch"
+}
+```
+
+pronto, agora os testes serão executados automaticamente a medida que alteremos os arquivos de teste e salvamos. Rode no terminal o `npm run test` e veja que o terminal não é mais liberado após a execução.
+
+Vamos iniciar nossos testes, veja o código abaixo:
+
+```javascript
+test("Async Demo", () => {
+  setTimeOut(() => {
+    expect(1).toBe(2);
+  }, 2000);
+});
+```
+
+se salvarmos o código acima veremos que o não teremos nenhum erro, o que claramente é um erro, pois `expect(1).toBe(2);` está errado. Isso acontece pq o jest não sabe que o código em questão se trata de um código assincrono. Para resolver isso, precisamos dizer ao jest para finalizar o teste, somente quando tudo estiver feito(done), ou seja:
+
+```javascript
+test("Async Demo", (done) => {
+  setTimeOut(() => {
+    expect(1).toBe(2);
+    done();
+  }, 2000);
+});
+```
+
+quando o `setTimeOut` terminar de executar, o método `done()` será executado e o jest finalizará os testes com os resultados. Se olhar no terminal agora veremos um erro, o que era o resultado esperado.
