@@ -1,1 +1,1 @@
-# Laboratório de testes automatizados 🧪
+# Testes automatizados 🧪
