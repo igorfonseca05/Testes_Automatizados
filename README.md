@@ -49,3 +49,33 @@ test("Esse test vai falhar", () => {
   throw new Errro("Falhar!");
 });
 ```
+
+Agora crie um arquivo externo `math.js` onde adicionamos a função:
+
+```javascript
+function sum(num1, num2) {
+  return num1 + num2;
+}
+
+module.exports = {
+  sum,
+};
+```
+
+é uma função simples mas vai servir para nossos testes iniciais. Agora dentro do nosso arquivo `math.test.js` vamos importar a função acima e usar `sum` nos nossos testes.
+
+```javascript
+const { sum } = require("./math");
+
+// Teste 1
+test("obter soma", () => {
+  const soma = sum(1, 2);
+  expect(soma).toBe(3);
+});
+
+// Teste 2
+test("Nome deve ser igor", () => {
+  const name = "Alan";
+  expect(name).toBe("igor");
+});
+```
