@@ -116,3 +116,48 @@ test("Async Demo", (done) => {
 ```
 
 quando o `setTimeOut` terminar de executar, o método `done()` será executado e o jest finalizará os testes com os resultados. Se olhar no terminal agora veremos um erro, o que era o resultado esperado.
+
+Vamos adicionar um outra função ao nossos testes para tornar as coisas um pouco mais dificeis. Veja o código abaixo:
+
+```javascript
+function sum(num1, num2) {
+  return num1 + num2;
+}
+
+const add = (a, b) => {
+  return new Promise(resolve, (reject) => {
+    setTimeout(() => {
+      if (a < 0 || b < 0) {
+        console.log("Numbers must be non-negative");
+      }
+
+      resolve(a + b);
+    }, 2000);
+  });
+};
+
+module.exports = {
+  sum,
+  add,
+};
+```
+
+adicionamos a função `add` que é assicrona para trabalhar melhor com processos assincronos. Agora vamos iniciar nossos testes. Como a função `add` é assincrona, então usamos o `then()` para resolver a promisse. Uma vez resolvida, usamos o retorno para executar nossos testes da mesma forma que fizemos até aqui.
+
+```javascript
+test("obter a soma de dois números", (done) => {
+  add(2, 3).then((sum) => {
+    expect(sum).toBe(5);
+    done();
+  });
+});
+```
+
+podemos escrever o código acima usando `async/await`, que é mais usado e fica como:
+
+```javascript
+test("obter a soma de dois números", async () => {
+  const sum = await add(1, 2);
+  expect(sum).toBe(3);
+});
+```
