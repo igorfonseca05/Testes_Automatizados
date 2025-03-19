@@ -9,12 +9,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-  steps:
-    - name: Clonar repositório
-      uses: actions/checkout@v3
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v3
 
-    - name: Instalar dependencias
-      run: npm install
+      - name: Instalar dependencias
+        run: npm install
 
-    - name: Rodar testes
-      run: npm test
+      - name: Rodar testes
+        run: npm test
