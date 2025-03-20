@@ -161,3 +161,395 @@ test("obter a soma de dois números", async () => {
   expect(sum).toBe(3);
 });
 ```
+
+## Testando aplicação express part I
+
+Nesta seção alguns arquivos serão modificados, uma vez que serão usados para executar testes dentro de uma API. A primeira alteração a ser feita é no arquivo .env, aqui será criado outro arquivo com o nome `teste.env` onde será adicionado uma copia dos dados do arquivo `.env`. Os testes executado pelo jest na nossa API, afeta a base de dados, uma vez que os testes são como solicitações reais a nossa API. Esse não é o comportamento desejado, em função disso, vamos usar uma base de dados local para executar os testes dentro da nossa API. No `teste.env` adicione:
+
+    DB_URL= mongodb://127.0.0.1:27017/auth
+
+Lembrando que possivelmente haverá outras variaveis de ambiente dentro do arquivo `.env`, as mantenham como estão, altere somente a base de dados na URL.
+
+Como os testes serão executados usando o arquivo `teste.env` vamos configurar o jest para usar esse arquivo, dentro do package.json altere os dados para:
+
+```json
+ "scripts": {
+    "start": "node server.js",
+    "server": "nodemon server.js",
+    "test": "env-cmd ./test.env jest --watch"
+  },
+    "jest": {
+    "testEnvironment": "node"
+  },
+```
+
+## Testando aplicação express part II
+
+Aqui antes de iniciar o teste vamos instalar um novo pacote do node, chamado supertest:
+
+    npm i supertest
+
+Uma outra alteração que devemos fazer é na estrutura do nosso servidor, uma vez que o jest executa testes sem que o servidor esteja rodando, dado que ao iniciar o servidor ele bloqueia a porta onde é feita os testes. Para evitar comportamentos indesejados, vamos criar na raiz do projeto vamos criar um arquivo chamado `app.js`, onde vamos adicionar o parte do código que está dentro do `server.js`.
+
+#### server.js
+
+```javascript
+const app = require("./app"); // importando outro parte do servidor
+
+// server config
+const port = process.env.port || 5000;
+
+// Servidor
+app.listen(port, () => {
+  console.log("Servidor On");
+  console.log(`Acesse em http://localhost:${port}`);
+});
+```
+
+#### app.js
+
+```javascript
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+
+require("./src/db/dbConnection");
+
+// Routes
+const routes = require("./src/routes/routes");
+
+// Database Connection
+require("./src/db/dbConnection");
+
+// Middlewares
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "Bem vindo ao servidor" });
+});
+
+app.use(routes);
+
+module.exports = app; // Exportanto para o arquivo server.js
+```
+
+Para iniciar nossos testes, vamos importar o app.js dentro do nosso arquivo `users.test.js` que foi criado dentro da pasta /src/test
+
+## Teste 1 - Testando cadastrar usuário na API
+
+```javascript
+const request = require("supertest");
+
+const app = require("../app");
+
+test("Deve cadastrar usuário", async () => {
+  await request(app)
+    .post("/users")
+    .send({
+      name: "igor",
+      email: "igor@gmail.com",
+      password: "12346",
+    })
+    .expect(201);
+});
+```
+
+Se já houver algum usuário com esses dados cadastrados, o teste lançará um erro.
+
+## Configuração jest e desmontagem
+
+No exemplo acima temos um usuário sendo adicionado à base de dados, se executarmos o mesmo teste mais de uma vez, na segunda execução o teste lançará um erro, uma vez que os testes realizados pelo jest realmente afetam a base de dados, ou seja, o usuário realmente é adicionado na base e quando rodamos o mesmo teste de maneira subsequente, o que ocorre é que nossa API lança um erro, uma vez que o dado que estamos tentando adicionar já existe na base de dados. Para resolver esse problema, devemos desmontar a base de dados após o teste.
+
+```javascript
+// Essa função será executada antes de teste
+beforeEach(() => {});
+```
+
+```javascript
+// Essa função será executada antes de teste
+afterEach(() => {});
+```
+
+podemos executar qualquer lógica dentro dos métodos acima, e elas serão executadas antes e depois de cada teste. Um exemplo de uso comum desses métodos dentro dos nossos testes é o de limpar a base de dados antes ou depois de executar os testes, isso evita que os testes que executamos lancem erros.
+
+```javascript
+const User = require("../src/model/userModel");
+
+beforeEach(async () => {
+  await User.deleteMany();
+});
+```
+
+ou
+
+```javascript
+const User = require("../src/model/userModel");
+
+afterEach(async () => {
+  await User.deleteMany();
+});
+```
+
+Agora vamos testar a rota de login da nossa aplicação, e se repararmos acima, todos os dados da nossa base são removidos após os testes de `cadastro`, o que é um problema para o caso do teste de login, uma vez que nesse caso, devemos ter um usuário cadastrado na base de dados. Para resolver esse problemas, vamos precisar alterar um pouco nosso código.
+
+```javascript
+const request = require("supertest");
+
+const app = require("../app");
+const mongoose = require("mongoose");
+const User = require("../src/model/userModel");
+
+const user = {
+  name: "Paula",
+  email: "paula@gmail.com",
+  password: "12346",
+};
+
+beforeEach(async () => {
+  await User.deleteMany();
+  await new User(user).save();
+});
+
+test("Deve cadastrar usuário", async () => {
+  await request(app)
+    .post("/users")
+    .send({
+      name: "igor",
+      email: "igor@gmail.com",
+      password: "12346",
+    })
+    .expect(201);
+});
+```
+
+Agora temos um usuário permanente na base de dados e podemos executar o teste de login, analise o código abaixo
+
+```javascript
+const request = require("supertest");
+
+const app = require("../app");
+const mongoose = require("mongoose");
+const User = require("../src/model/userModel");
+
+const user = {
+  userName: "Paula",
+  email: "paula@gmail.com",
+  password: "12346",
+};
+
+beforeEach(async () => {
+  await User.deleteMany();
+  await new User(user).save();
+});
+
+//  Teste rota cadastro ✅
+test("Deve cadastrar usuário", async () => {
+  await request(app)
+    .post("/users")
+    .send({
+      name: "igor",
+      email: "igor@gmail.com",
+      password: "12346",
+    })
+    .expect(201);
+});
+
+// Teste de erro rota cadastro ❌
+test("Não deve cadastrar usuário", async () => {
+  await request(app)
+    .post("/users")
+    .send({
+      name: "i", // Dado inválido
+      email: "igor@", // Dado inválido
+      password: "12", // Dado inválido
+    })
+    .expect(201);
+});
+
+//  Teste rota Login ✅
+test("Deve fazer login usuário", async () => {
+  await request(app)
+    .post("/users/login")
+    .send({
+      email: user.email,
+      password: user.password,
+    })
+    .expect(200);
+});
+
+//  Teste de falha rota Login ❌
+test("Deve falhar ao realizar login do usuário", async () => {
+  await request(app)
+    .post("/users/login")
+    .send({
+      email: "andre@hotmail.com", // Usuário não cadastrado
+      password: user.password,
+    })
+    .expect(200);
+});
+
+afterAll(async () => {
+  await mongoose.connection.close(); // Fecha conexão com a base de dados após testes
+});
+```
+
+## Testando rotas privadas
+
+Rotas privadas são aquelas que os usuários precisam possuir um token para poder acessa-las. Esse token é decodificado e verificado sua validade pelo servidor, de modo que o usuário possa acessar serviços e dados confidenciais associados a sua conta. Os testes executados até o momento foram realizados em rotas públicas, onde não era necessário o usuário possuir um token para poder acessa-las. Entretanto, nos testes subsequentes, as rotas serão privadas e precisaremos adicionar um `Id` à nossa usuária permanente, e com esse Id vamos criar um token de acesso para a usuária.
+
+Utilizamos o mongoose para criar um `ObjectId`, esse dado será o valor do campo `_id` do documento user. Com esse dado obtido, podemos gerar um token para o user usando o método `.sign()` do `jsonwebtoken`, passando o **userOneId** como payload, o **JWT_SECRET** para segredo e o tempo de expiração do token ao final. O processo detalhado pode ser visualizado no código abaixo.
+
+```javascript
+const request = require("supertest");
+
+const app = require("../app");
+const mongoose = require("mongoose");
+const User = require("../src/model/userModel");
+
+const jwt = require("jsonwebtoken");
+
+// Aqui estamos criando o id e associando a usuária permanente
+const userOneId = new mongoose.Types.ObjectId();
+
+const user = {
+  _id: userOneId,
+  userName: "Paula",
+  email: "paula@gmail.com",
+  password: "12346",
+  tokens: [{ token: jwt.sign({ _id: userOneId }, process.env.JWT_SECRET) }],
+};
+```
+
+Agora que nosso usuário possui um token associado, podemos unir os testes as rotas privadas aos testes que já executamos até aqui, com a diferença de que, agora devemos nos atentar aos métodos exigidos em cada um dos testes e no fato de que precisaremos enviar nosso token via método `.set()`. Veja os testes 5 e 6 abaixo.
+
+```javascript
+const request = require("supertest");
+
+const app = require("../app");
+const mongoose = require("mongoose");
+const User = require("../src/model/userModel");
+
+const jwt = require("jsonwebtoken");
+
+// Aqui estamos criando o id e associando a usuária permanente
+const userOneId = new mongoose.Types.ObjectId();
+
+const user = {
+  _id: userOneId,
+  userName: "Paula",
+  email: "paula@gmail.com",
+  password: "12346",
+  tokens: [{ token: jwt.sign({ _id: userOneId }, process.env.JWT_SECRET) }],
+};
+
+beforeEach(async () => {
+  await User.deleteMany();
+  await new User(user).save();
+});
+
+  // 1 - Teste rota cadastro ✅
+  test("Deve cadastrar usuário", async () => {
+    await request(app)
+      .post("/users")
+      .send({
+        name: "igor",
+        email: "igor@gmail.com",
+        password: "12346",
+      })
+      .expect(201);
+  });
+
+  // 2 - Teste de erro rota cadastro ❌
+  test("Não deve cadastrar usuário", async () => {
+    await request(app)
+      .post("/users")
+      .send({
+        name: "i", // Dado inválido
+        email: "igor@", // Dado inválido
+        password: "12", // Dado inválido
+      })
+      .expect(201);
+  });
+
+  // 3 - Teste rota Login ✅
+  test("Deve fazer login usuário", async () => {
+    await request(app)
+      .post("/users/login")
+      .send({
+        email: user.email,
+        password: user.password,
+      })
+      .expect(200);
+  });
+
+  // 4 - Teste de falha rota Login ❌
+  test("Deve falhar ao realizar login do usuário", async () => {
+    await request(app)
+      .post("/users/login")
+      .send({
+        email: "andre@hotmail.com", // Usuário não cadastrado
+        password: user.password,
+      })
+      .expect(200);
+  });
+
+ // 5- Teste para obter informações do usuário ✅
+  test("Obter dados do perfil do usuário", async () => {
+    await request(app)
+      .get("/users/profile")
+      .set("Authorization", `Bearer ${user.tokens[0].token}`)
+      .send()
+      .expect(200);
+  });
+
+  // 6 - Teste de falha da rota de obter dados do usuário ❌
+  test('Não deve retornar dados do usuário, token não foi enviado', async () => {
+     await request(app)
+          .get('/users/profile')
+          .set('Authorization', `Bearer ${}`)
+          .send()
+          .expect(403)
+  })
+
+afterAll(async () => {
+  await mongoose.connection.close(); // Fecha conexão com a base de dados após testes
+});
+```
+
+## Teste rota delete
+
+Agora chegou o momento de verificarmos se nossa API está removendo os dados corretamente, para isso, vamos adicionar aos nossos testes, o de número 7 e 8 mostra no código abaixo.
+
+```javascript
+// 7 - Teste de remoção da conta do usuário ✅
+
+test("Deve remover o usuário", async () => {
+  await request(app)
+    .delete("/users/profile")
+    .set("Authorization", `Bearer ${user.tokens[0].token}`)
+    .send()
+    .expect(200);
+});
+
+// 8 - Teste de falha ao remover da conta do usuário, usuário não autorizado ❌
+
+test("Deve remover o usuário", async () => {
+  await request(app)
+    .delete("/users/profile")
+    .set("Authorization", ``)
+    .send()
+    .expect(403);
+});
+```
