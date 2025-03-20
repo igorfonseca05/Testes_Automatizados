@@ -561,3 +561,35 @@ test("Deve remover o usuário", async () => {
     .expect(403);
 });
 ```
+
+## Declarações avançadas
+
+```js
+test("Deve cadastrar novo usuário", async () => {
+  // Envia uma requisição POST para cadastrar um novo usuário
+  const response = await request(app)
+    .post("/users/signup")
+    .send({
+      name: "Andrew",
+      email: "andrew@example.com",
+      password: "MyPass777!",
+    })
+    .expect(201); // Espera que o status da resposta seja 201 (Created)
+
+  // Verifica se o usuário foi salvo corretamente no banco de dados
+  const user = await User.findById(response.body.user._id);
+  expect(user).not.toBeNull(); // O usuário deve existir no banco
+
+  // Verificações sobre a resposta da API
+  expect(response.body).toMatchObject({
+    user: {
+      name: "Andrew",
+      email: "andrew@example.com",
+    },
+    token: user.tokens[0].token, // O token gerado deve ser igual ao armazenado no banco
+  });
+
+  // Garante que a senha salva no banco está criptografada
+  expect(user.password).not.toBe("MyPass777!");
+});
+```
