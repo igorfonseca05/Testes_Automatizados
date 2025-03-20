@@ -27,9 +27,9 @@ script: {
 }
 ```
 
-No terminal vamos executar o jest
+No terminal vamos executar nossos testes usando o comando:
 
-    npm run test
+    npm test
 
 vamos obter um erro no terminal pois ainda não criamos uma arquivo de teste. Para fazer isso, crie uma nova pasta no diretório `src` chamada `tests` e dentro adicione arquivos com nome como:
 
@@ -168,20 +168,28 @@ Nesta seção alguns arquivos serão modificados, uma vez que serão usados para
 
     DB_URL= mongodb://127.0.0.1:27017/auth
 
-Lembrando que possivelmente haverá outras variaveis de ambiente dentro do arquivo `.env`, as mantenham como estão, altere somente a base de dados na URL.
+Lembrando que possivelmente haverá outras variáveis de ambiente dentro do arquivo `.env`, as mantenham como estão, altere somente a base de dados na URL.
 
-Como os testes serão executados usando o arquivo `teste.env` vamos configurar o jest para usar esse arquivo, dentro do package.json altere os dados para:
+Como os testes serão executados usando o arquivo `teste.env` vamos configurar o jest para usar esse arquivo.
+
+Primeiro, vamos instalar o pacote `env-cmd` digitando no terminal:
+
+    npm i env-cmd --save-dev
+
+agora, dentro do package.json altere os dados para:
 
 ```json
- "scripts": {
+"scripts": {
     "start": "node server.js",
     "server": "nodemon server.js",
-    "test": "env-cmd ./test.env jest --watch"
+    "test": "env-cmd -f test.env jest --watch"
   },
-    "jest": {
+  "jest": {
     "testEnvironment": "node"
   },
 ```
+
+Agora quando for executar nossos testes, é só digitar npm test no terminal.
 
 ## Testando aplicação express part II
 
