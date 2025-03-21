@@ -564,6 +564,8 @@ test("Deve remover o usuário", async () => {
 
 ## Declarações avançadas
 
+Podemos fazer testes mais avançados, verificando se dados foram de fato salvos na base de dados, se o token foi gerado como esperado entre outros, veja alguns exemplos abaixo.
+
 ```js
 test("Deve cadastrar novo usuário", async () => {
   // Envia uma requisição POST para cadastrar um novo usuário
@@ -592,4 +594,49 @@ test("Deve cadastrar novo usuário", async () => {
   // Garante que a senha salva no banco está criptografada
   expect(user.password).not.toBe("MyPass777!");
 });
+```
+
+## Mocking libraries
+
+No contexto dos testes automatizados, **Mocking Libraries** são bibliotecas usadas para criar objetos simulados que imitam o comportamento de dependências externas, como bancos de dados, APIs ou funções de terceiros. Isso permite testar partes específicas do código sem depender desses serviços externos, tornando os testes mais rápidos, isolados e previsíveis.
+
+Para criar nossos mocks, vamos criar uma pasta chamada `__mocks__` dentro da pasta onde estamos rodando nossos testes.
+Dentre da pasta vamos adicionar uma pasta com o nome do modulo que queremos recriar com o @ na frente do nome `@sendgrid`, por exemplo, e dentro dessa pasta vamos adicionar um arquivo.js.
+
+Quando estamos criando um mock de uma api externa é importante garantir que nosso mock tenha exatamente as mesmas funções da Api original. Por exemplo:
+
+```js
+const sgMail = require("@sendgrid/mail");
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+const sendWelcomeEmail = (email, name) => {
+  sgMail.send({
+    to: email,
+    from: 'Igorfonseca@gmail.com',
+    subject: 'Thanks for joining in!'
+    text: 'Bem vindo a API'
+  })
+}
+
+const sendCancelationEmail = (email, name) => {
+  sgMail.send({
+    to: email,
+    from: 'Igorfonseca@gmail.com',
+    subject: 'Thanks for joining in!'
+    text: 'Triste por te ver partir...'
+  })
+}
+
+```
+
+acima temos um pacote que envia email ao usuário quando ele cria ou remove sua conta. Vamos criar um mock desse pacote para simular o comportamento de enviar email e podermos testar nossa API sem gastar da cota gratuita. Repare que no código acima utilizamos dois métodos, o `setApiKey()` e o `.send()`, e nenhum deles retorna algo. Então será esses dois métodos que vamos simular o comportamento.
+
+Dentro no arquivo.js na pasta dentro de `__mock__` fazemos:
+
+```js
+module.exports = {
+  setApiKey() {},
+  send() {},
+};
 ```
