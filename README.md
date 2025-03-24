@@ -664,6 +664,66 @@ O teste acima é para o caso de estar salvando a imagem de perfil dentro do docu
 
 ```js
 jest.mock("multer", () => {
-  return () => {};
+  return () => ({
+    single: jest.fn(() => (req, res, next) => next()),
+    array: jest.fn(() => (req, res, next) => next()),
+    fileds: jest.fn(() => (req, res, next) => next()),
+  });
+});
+```
+
+abaixo explico detalhadamente a estrutura do código acima
+
+1️⃣ `jest.mock('multer', () => {...})`
+Aqui, estamos dizendo ao Jest para substituir o módulo multer por um mock personalizado.
+
+2️⃣ `return () => ({ ... })`
+O multer exporta uma função, então nosso mock precisa imitar isso. Quando chamamos multer(), ele retorna um objeto que contém métodos (single, array, fields).
+
+3️⃣ `single: jest.fn(() => (req, res, next) => next())`
+A função single() recebe o nome de um campo de arquivo (upload.single('file')) e retorna um middleware Express.
+
+- No código original, o multer processaria o arquivo antes de chamar next().
+
+- No mock, apenas chamamos next() diretamente, simulando um upload sem processar nada.
+
+4️⃣ array() e fields()
+Eles seguem a mesma lógica de single(), mas para múltiplos arquivos.
+
+Por fim para verificar se o multer foi chamado, no teste podemos incluir um
+
+```js
+expect(multer().single).toHaveBeenCalled();
+```
+
+Isso confirma que o multer foi instanciado e utilizado no código.
+
+Para o caso Cloudinary podemos fazer:
+
+```js
+jest.mock("multer-storage-cloudinary", () => ({
+  CloudinaryStorage: jest.fn(() => ({
+    _handleFile: jest.fn((req, file, cb) => cb(null, { path: "mock-url" })),
+    _removeFile: jest.fn((req, file, cb) => cb(null)),
+  })),
+}));
+```
+
+## Testes para rota de atualização de dados
+
+Algumas rotas da nossa aplicação são utilizadas para atualizar os dados dos usuários, abaixo mostro como testar essas rotas.
+
+```js
+test("Deve atualizar campos validos do usuário", async () => {
+  await request(app)
+    .post("/users/profile")
+    .set("Authorization", `Bearer ${user.tokens[0].token}`)
+    .send({
+      name: "Alex",
+    })
+    .expect(200);
+
+  const user = await findById(userID);
+  expect(user.name).toEqual("Alex");
 });
 ```
