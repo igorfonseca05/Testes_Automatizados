@@ -640,3 +640,30 @@ module.exports = {
   send() {},
 };
 ```
+
+Agora é só criar um test para a rota de criar...
+
+## Teste de rotas com envio de arquivos
+
+Na nossa API, existe a rota onde o usuário deve anexar uma foto para ser usada como foto de perfil, aqui vamos aprender como podemos testar esse tipo de rota enviando uma arquivo em anexo. Para isso vamos criar dentro da pasta `__mocks__` uma nova pasta chamada `fixture`, onde vamos adicionar o arquivo que queremos enviar no teste. Uma vez com esse passo tendo sido feito, vamos escrever o teste como mostrado abaixo.
+
+```js
+test("Deve fazer envio de imagem", async () => {
+  await request(app)
+    .post("/profile/photo")
+    .set("Authorization", `Bearer ${user.tokens[0].token}`)
+    .attach("profile img", "caminho até a imagem")
+    .expect(200);
+
+  const user = await User.findById(userId);
+  expect(user.avatar).toEqual(expect.any(Buffer));
+});
+```
+
+O teste acima é para o caso de estar salvando a imagem de perfil dentro do documento na base de dados, o que não é recomendado. Neste caso devemos usar um serviço externo de armazenamento de imagens e salvar a URL da imagem que o serviço como o Claudinary fornece. Se estiver usando esses serviços para realizar os testes será necessário fazer um mock do `multer` e `cloudinary`. Para o caso do multer podemos fazer algo como:
+
+```js
+jest.mock("multer", () => {
+  return () => {};
+});
+```
