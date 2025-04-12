@@ -15,7 +15,7 @@ São testes executados por código para verificar se um sistema funciona correta
 
 Nesta seção vamos utilizar o `jest` para realizar os testes, para isso digite no terminal
 
-    npm i jest --save-dev
+    npm i jest --save-de
 
 agora dentro do package.json, dentro do objeto _script_ adicione
 
