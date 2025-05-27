@@ -1,3 +1,4 @@
+![20250527_1053_Testes Automatizados Node js_simple_compose_01jw9088kbffk9qvkmn3zttp1x (1)](https://github.com/user-attachments/assets/6d428552-318c-40c1-9d7d-bcc693af3342)
 # Testes automatizados 🧪
 
 ## O que são testes automatizados?
