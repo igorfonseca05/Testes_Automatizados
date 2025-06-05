@@ -15,7 +15,7 @@ São testes executados por código para verificar se um sistema funciona correta
 
 ## Instalando pacote
 
-Nesta seção vamos utilizar o `jest` para realizar os testes, para isso digite no terminal
+Nesta seção vamos utilizar o `jest` para realizar os testes, para isso digite no termina
 
     npm i jest --save-de
 
